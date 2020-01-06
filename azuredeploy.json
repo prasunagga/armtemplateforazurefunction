@@ -11,7 +11,7 @@
 	},
 	"sku": {
 	  "type": "string",
-	  "defaultValue": "S1",
+	  "defaultValue": "P1",
 	  "metadata": {
 	    "description": "The pricing tier"
 	  }
@@ -41,7 +41,8 @@
   "variables": {
     "functionAppName": "[parameters('appName')]",
 	"hostingPlanName": "[parameters('appName')]",
-	"storageAccountName": "storageparasun131"
+	"storageAccountName": "storageparasun131",
+	"applicationInsightsName": "[parameters('appName')]"
   },
   "resources": [
   {
@@ -66,6 +67,16 @@
 	  "name": "[variables('hostingPlanName')]",
 	  "workerSize": "[parameters('workerSize')]",
 	  "numberOfWorkers": 1
+	}
+  },
+  {
+    "type": "Microsoft.Insights/components",
+	"name": "[variables('applicationInsightsName')]",
+	"location": "[parameters('location')]",
+	"apiVersion": "2018-05-01-preview",
+	"properties": {
+	  "ApplicationId": "[variables('applicationInsightsName')]",
+	  "Request_Source": "IbizaWebAppExtensionCreate"
 	}
   },
   {
@@ -101,6 +112,7 @@
           "FUNCTIONS_EXTENSION_VERSION": "~2",
 		  "FUNCTIONS_WORKER_RUNTIME": "dotnet",
 		  "WEBSITE_CONTENTSHARE": "[variables('storageAccountName')]",
+		  "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(resourceId('Microsoft.Insights/components', variables('applicationInsightsName'), '2015-05-01').InstrumentationKey]",
 		  "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listkeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2015-05-01-preview').key1,';')]"
 		}
 	  }
