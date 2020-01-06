@@ -1,0 +1,110 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appName": {
+      "type": "string",
+      "defaultValue": "prasun136s10",
+	  "metadata": {
+        "description": "The name of the function app"
+	  }
+	},
+	"sku": {
+	  "type": "string",
+	  "defaultValue": "S1",
+	  "metadata": {
+	    "description": "The pricing tier"
+	  }
+	},
+	"workerSize": {
+	  "type": "string",
+	  "defaultValue": "0",
+	  "metadata": {
+	    "description": "The instance size of hosting plan"
+	  }
+	},
+	"storageAccountType": {
+	  "type": "string",
+	  "defaultValue": "Standard_LRS",
+	  "metadata": {
+	    "description": "The Storage Account Type"
+	  }
+	},
+	"location": {
+	  "type": "string",
+	  "defaultValue": "[resourceGroup().location]",
+	  "metadata": {
+	    "description": "Location of all resources"
+	  }
+	}
+  },
+  "variables": {
+    "functionAppName": "[parameters('appName')]",
+	"hostingPlanName": "[parameters('appName')]",
+	"storageAccountName": "storageparasun131"
+  },
+  "resources": [
+  {
+    "type": "Microsoft.Storage/storageAccounts",
+	"name": "[variables('storageAccountName')]",
+	"apiVersion": "2018-11-01",
+	"location": "[parameters('location')]",
+	"kind": "storage",
+	"sku": {
+	  "name": "[parameters('storageAccountType')]"
+	}
+  },
+  {
+    "type": "Microsoft.Web/serverfarms",
+	"apiVersion": "2019-08-01",
+	"name": "[variables('hostingPlanName')]",
+	"location": "[parameters('location')]",
+	"sku": {
+	  "name": "[parameters('sku')]"
+	},
+	"properties": {
+	  "name": "[variables('hostingPlanName')]",
+	  "workerSize": "[parameters('workerSize')]",
+	  "numberOfWorkers": 1
+	}
+  },
+  {
+    "type": "Microsoft.Web/sites",
+	"apiVersion": "2018-11-01",
+	"name": "[variables('functionAppName')]",
+	"location": "[parameters('location')]",
+	"kind": "functionapp",
+	"properties": {
+	  "name": "[variables('functionAppName')]",
+	  "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+	  "clientAffinityEnabled": false,
+	  "siteConfig": {
+	    "alwaysOn": true
+	  }
+	},
+	"dependsOn": [
+	  "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+	  "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+	],
+	"resources": [
+	  {
+	    "apiVersion": "2018-11-01",
+		"name": "appsettings",
+		"type": "config",
+		"dependsOn": [
+	      "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]",
+	      "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+	    ],
+		"properties": {
+		  "AzureWebJobsStorage": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listkeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2015-05-01-preview').key1,';')]",
+          "AzureWebJobsDashboard": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listkeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2015-05-01-preview').key1,';')]",
+          "FUNCTIONS_EXTENSION_VERSION": "~2",
+		  "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+		  "WEBSITE_CONTENTSHARE": "[variables('storageAccountName')]",
+		  "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listkeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2015-05-01-preview').key1,';')]"
+		}
+	  }
+	]
+  }
+  ]
+}
